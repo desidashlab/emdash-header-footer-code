@@ -19,7 +19,9 @@
 			"banner": { "file": "assets/banner.png" },
 			"screenshots": [
 				{ "file": "assets/screenshot-code.jpg" },
+				{ "file": "assets/screenshot-add.jpg" },
 				{ "file": "assets/screenshot-common.jpg" },
+				{ "file": "assets/screenshot-verify.jpg" },
 				{ "file": "assets/screenshot-setup.jpg" }
 			]
 		}
