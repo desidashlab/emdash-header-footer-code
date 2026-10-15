@@ -1,0 +1,41 @@
+{
+	"$schema": "./node_modules/@emdash-cms/plugin-cli/schemas/emdash-plugin.schema.json",
+
+	"slug": "header-footer-code",
+	"publisher": "did:plc:vvm75pgx6ihqfuil7y5awyge",
+
+	"name": "Header & Footer Code",
+	"description": "Add Google Analytics, Tag Manager, pixels, verification tags or any code to your site's head or body. No theme editing.",
+	"keywords": ["header footer", "google analytics", "tag manager", "pixel", "code snippets"],
+
+	"license": "MIT",
+	"author": { "name": "DesiDash Lab" },
+	"security": { "email": "desidashlab@gmail.com" },
+	"repo": "https://github.com/desidashlab/emdash-header-footer-code",
+
+	"release": {
+		"artifacts": {
+			"icon": { "file": "assets/icon.png" },
+			"banner": { "file": "assets/banner.png" },
+			"screenshots": [
+				{ "file": "assets/screenshot-code.jpg" },
+				{ "file": "assets/screenshot-common.jpg" },
+				{ "file": "assets/screenshot-setup.jpg" }
+			]
+		}
+	},
+
+	"sections": {
+		"installation": { "file": "docs/installation.md" },
+		"faq": { "file": "docs/faq.md" },
+		"changelog": { "file": "docs/changelog.md" }
+	},
+
+	// No access to your content or the outside world. Verification tags are added to the page head through the page metadata hook.
+	"capabilities": [],
+	"allowedHosts": [],
+
+	"admin": {
+		"pages": [{ "path": "/overview", "label": "Header & Footer Code", "icon": "code" }]
+	}
+}
