@@ -1,10 +1,10 @@
 ## What does this plugin do?
 
-It lets you add small pieces of code to your site from the admin: Google Analytics, Tag Manager, a Meta Pixel, a verification tag, a chat widget, a font, a bit of CSS. You choose where the code goes and on which pages, and you can switch it off any time. You never open theme files.
+It lets you add small pieces of code to your site from the admin: Google Analytics, Tag Manager, a Meta Pixel, a chat widget, a font, a bit of CSS. You choose where the code goes and on which pages, and you can switch it off any time. You never open theme files.
 
 ## Where can the code go?
 
-Three places: the head, the start of the body, or the end of the body. Analytics and verification tags belong in the head. Chat widgets and most other scripts belong at the end of the body.
+Three places: the head, the start of the body, or the end of the body. Analytics tags belong in the head. Chat widgets and most other scripts belong at the end of the body.
 
 ## Can I show code only on some pages?
 
@@ -14,9 +14,9 @@ Yes. Each snippet can show everywhere, only on the home page, or only on address
 
 Not for the common ones. On the Common tags tab you paste only the ID, and the plugin writes the code: Google Analytics, Google Tag Manager, Meta Pixel and Microsoft Clarity. For anything else, paste the code the service gives you into the Code box.
 
-## How do site verification tags work?
+## What about Google Search Console or Bing verification?
 
-Pick the service, paste the code or the whole meta tag it gave you, and click Add. The tag is put in the page head by the site itself, so Google Search Console, Bing or Pinterest can check it straight away. These tags work even before the Setup line is in your theme.
+That is built into EmDash. Open Settings, then SEO, and paste the verification codes there. No plugin needed.
 
 ## How does the code reach my site?
 

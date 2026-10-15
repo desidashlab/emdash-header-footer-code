@@ -7,25 +7,14 @@ import type { Block, BlockResponse, FormField } from "@emdash-cms/blocks";
 
 const WHERE = ["head", "body-start", "body-end"] as const;
 const SHOW = ["all", "home", "prefix"] as const;
-const VERIFY = {
-	google: { label: "Google Search Console", meta: "google-site-verification" },
-	bing: { label: "Bing Webmaster Tools", meta: "msvalidate.01" },
-	pinterest: { label: "Pinterest", meta: "p:domain_verify" },
-	yandex: { label: "Yandex", meta: "yandex-verification" },
-	facebook: { label: "Facebook Business", meta: "facebook-domain-verification" },
-} as const;
-
 type Where = (typeof WHERE)[number];
 type Show = (typeof SHOW)[number];
-type VerifyService = keyof typeof VERIFY;
 
-/** One piece of code the owner added. "meta" snippets are verification tags served in the page head by the server. */
+/** One piece of code the owner added. */
 interface Snippet {
 	id: string;
 	name: string;
-	kind: "code" | "meta";
 	code: string;
-	metaName?: string;
 	where: Where;
 	show: Show;
 	prefix: string;
@@ -72,7 +61,6 @@ function cleanPrefix(v: unknown): string {
 
 function snippetFrom(v: unknown, existing?: Snippet): Snippet | null {
 	const o = isRecord(v) ? v : {};
-	const kind = existing?.kind ?? "code";
 	const name = str(o.name, 80).trim();
 	const code = str(o.code, MAX_CODE).trim();
 	if (!name || !code) return null;
@@ -81,10 +69,8 @@ function snippetFrom(v: unknown, existing?: Snippet): Snippet | null {
 	return {
 		id: existing?.id ?? newId(),
 		name,
-		kind,
 		code,
-		metaName: existing?.metaName,
-		where: kind === "meta" ? "head" : pick(o.where, WHERE, existing?.where ?? "head"),
+		where: pick(o.where, WHERE, existing?.where ?? "head"),
 		show: show === "prefix" && !prefix ? "all" : show,
 		prefix: show === "prefix" ? prefix : "",
 		active: typeof o.active === "boolean" ? o.active : (existing?.active ?? true),
@@ -96,7 +82,6 @@ function snippetsFrom(v: unknown): Snippet[] {
 	const out: Snippet[] = [];
 	for (const item of v.slice(0, 200)) {
 		if (!isRecord(item)) continue;
-		const kind = item.kind === "meta" ? "meta" : "code";
 		const id = str(item.id, 32);
 		const name = str(item.name, 80);
 		const code = str(item.code, MAX_CODE);
@@ -104,9 +89,7 @@ function snippetsFrom(v: unknown): Snippet[] {
 		out.push({
 			id,
 			name,
-			kind,
 			code,
-			metaName: kind === "meta" ? str(item.metaName, 64) || undefined : undefined,
 			where: pick(item.where, WHERE, "head"),
 			show: pick(item.show, SHOW, "all"),
 			prefix: cleanPrefix(item.prefix),
@@ -143,7 +126,6 @@ function preset(kind: string, rawId: string): Snippet | null {
 			return {
 				id: newId(),
 				name: "Google Analytics",
-				kind: "code",
 				code: `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>\n<script>\n\twindow.dataLayer = window.dataLayer || [];\n\tfunction gtag(){dataLayer.push(arguments);}\n\tgtag('js', new Date());\n\tgtag('config', '${id}');\n</script>`,
 				where: "head",
 				show: "all",
@@ -155,7 +137,6 @@ function preset(kind: string, rawId: string): Snippet | null {
 			return {
 				id: newId(),
 				name: "Google Tag Manager",
-				kind: "code",
 				code: `<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${id}');</script>`,
 				where: "head",
 				show: "all",
@@ -167,7 +148,6 @@ function preset(kind: string, rawId: string): Snippet | null {
 			return {
 				id: newId(),
 				name: "Meta Pixel",
-				kind: "code",
 				code: `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${id}');fbq('track','PageView');</script>`,
 				where: "head",
 				show: "all",
@@ -179,7 +159,6 @@ function preset(kind: string, rawId: string): Snippet | null {
 			return {
 				id: newId(),
 				name: "Microsoft Clarity",
-				kind: "code",
 				code: `<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script","${id}");</script>`,
 				where: "head",
 				show: "all",
@@ -188,25 +167,6 @@ function preset(kind: string, rawId: string): Snippet | null {
 			};
 	}
 	return null;
-}
-
-function verification(service: VerifyService, rawCode: string): Snippet | null {
-	// Owners often paste the whole meta tag; keep only the content value.
-	let code = rawCode.trim();
-	const m = /content=["']([^"']+)["']/.exec(code);
-	if (m) code = m[1]!;
-	if (!/^[A-Za-z0-9_\-=:.]{4,200}$/.test(code)) return null;
-	return {
-		id: newId(),
-		name: `${VERIFY[service].label} verification`,
-		kind: "meta",
-		code,
-		metaName: VERIFY[service].meta,
-		where: "head",
-		show: "all",
-		prefix: "",
-		active: true,
-	};
 }
 
 /* ------------------------------------------------------------------ */
@@ -272,27 +232,24 @@ async function loaderStatus(ctx: PluginContext): Promise<{ seen: boolean; ago: s
 }
 
 function snippetForm(editing?: Snippet): Block[] {
-	const isMeta = editing?.kind === "meta";
 	const fields: FormField[] = [
 		{ type: "text_input", action_id: "name", label: "Name", placeholder: "Google Analytics", initial_value: editing?.name ?? "" },
 		{
 			type: "text_input",
 			action_id: "code",
-			label: isMeta ? "Verification code" : "Code",
-			placeholder: isMeta ? "" : "<script>…</script>, <style>…</style> or any HTML",
+			label: "Code",
+			placeholder: "<script>…</script>, <style>…</style> or any HTML",
 			initial_value: editing?.code ?? "",
-			multiline: !isMeta,
+			multiline: true,
 		},
-	];
-	if (!isMeta) {
-		fields.push({
+		{
 			type: "select",
 			action_id: "where",
 			label: "Where",
 			options: WHERE.map((w) => ({ value: w, label: WHERE_LABEL[w] })),
 			initial_value: editing?.where ?? "head",
-		});
-	}
+		},
+	];
 	fields.push(
 		{
 			type: "select",
@@ -330,19 +287,19 @@ function snippetForm(editing?: Snippet): Block[] {
 async function snippetsTab(ctx: PluginContext, list: Snippet[], editing?: Snippet): Promise<Block[]> {
 	const blocks: Block[] = [];
 	const status = await loaderStatus(ctx);
-	if (list.some((s) => s.kind === "code" && s.active) && !status.seen) {
+	if (list.some((s) => s.active) && !status.seen) {
 		blocks.push({
 			type: "banner",
 			variant: "alert",
 			title: "Your code is not reaching the site yet",
-			description: "Add the one line from the Setup tab to your theme. Verification tags work without it.",
+			description: "Add the block from the Setup tab to your theme once.",
 		});
 	}
 	if (list.length === 0) {
 		blocks.push({
 			type: "empty",
 			title: "No code added yet",
-			description: "Add Google Analytics, a pixel or a verification tag from the Common tags tab, or paste any code below.",
+			description: "Add Google Analytics or a pixel from the Common tags tab, or paste any code below.",
 		});
 	} else {
 		blocks.push({
@@ -358,7 +315,7 @@ async function snippetsTab(ctx: PluginContext, list: Snippet[], editing?: Snippe
 			],
 			rows: list.map((s) => ({
 				name: s.name,
-				where: s.kind === "meta" ? "Head, served by the site" : WHERE_LABEL[s.where],
+				where: WHERE_LABEL[s.where],
 				show: showLabel(s),
 				status: s.active ? "Active" : "Off",
 				menu: {
@@ -403,23 +360,7 @@ function commonTab(): Block[] {
 		...one("Google Tag Manager", "add_gtm", "Container ID", "GTM-XXXXXXX", "Found at the top of your Tag Manager workspace."),
 		...one("Meta Pixel", "add_pixel", "Pixel ID", "123456789012345", "Found in Meta Events Manager."),
 		...one("Microsoft Clarity", "add_clarity", "Project ID", "abcdefghij", "Found in Clarity under Settings, Setup."),
-		{ type: "section", text: "Site verification" },
-		{ type: "context", text: "Paste the code or the whole meta tag the service gave you. The tag is served in the page head by the site itself, so it works even before the Setup line is in place." },
-		{
-			type: "form",
-			block_id: "add_verify",
-			fields: [
-				{
-					type: "select",
-					action_id: "service",
-					label: "Service",
-					options: (Object.keys(VERIFY) as VerifyService[]).map((k) => ({ value: k, label: VERIFY[k].label })),
-					initial_value: "google",
-				},
-				{ type: "text_input", action_id: "code", label: "Verification code", placeholder: 'abc123… or <meta name="google-site-verification" content="…">' },
-			],
-			submit: { label: "Add", action_id: "add_verify" },
-		},
+		{ type: "context", text: "Google and Bing site verification are built into EmDash: Settings, then SEO." },
 	];
 }
 
@@ -431,7 +372,7 @@ async function setupTab(ctx: PluginContext): Promise<Block[]> {
 			: { type: "banner", title: "One line to add", description: "Your site has not loaded the code yet. Add the line below to your theme." },
 		{ type: "section", text: "Paste this once into the head of your base layout, usually src/layouts/Base.astro." },
 		{ type: "code", language: "tsx", code: loader(ctx.plugin.id) },
-		{ type: "context", text: "Everything you add or change here reaches the site within a minute, without touching the theme again. Verification tags do not need this line at all." },
+		{ type: "context", text: "Everything you add or change here reaches the site within a minute, without touching the theme again." },
 	];
 }
 
@@ -479,13 +420,6 @@ async function handleAdmin(ctx: PluginContext, i: Interaction): Promise<BlockRes
 				await saveSnippets(ctx, [...list, made]);
 				return { ...(await page(ctx, TABS.snippets)), ...toast(`${made.name} added`) };
 			}
-			case "add_verify": {
-				const service = pick(v.service, Object.keys(VERIFY) as VerifyService[], "google");
-				const made = verification(service, str(v.code, 400));
-				if (!made) return { ...(await page(ctx, TABS.common)), ...toast("That code does not look right. Paste the code or the whole meta tag.", "error") };
-				await saveSnippets(ctx, [...list, made]);
-				return { ...(await page(ctx, TABS.snippets)), ...toast(`${made.name} added. It is live now.`) };
-			}
 		}
 	}
 
@@ -520,16 +454,6 @@ async function handleAdmin(ctx: PluginContext, i: Interaction): Promise<BlockRes
 /* ------------------------------------------------------------------ */
 
 const plugin: SandboxedPlugin = {
-	hooks: {
-		/** Verification tags go straight into the page head, served by the site. */
-		"page:metadata": async (_event, ctx) => {
-			const list = await loadSnippets(ctx);
-			const metas = list.filter((s) => s.kind === "meta" && s.active && s.metaName);
-			if (metas.length === 0) return null;
-			return metas.map((s) => ({ kind: "meta" as const, name: s.metaName!, content: s.code, key: `hfc:${s.id}` }));
-		},
-	},
-
 	routes: {
 		/** Public: the active code snippets. Same for every visitor, so it may be cached for a minute. */
 		config: {
@@ -543,7 +467,7 @@ const plugin: SandboxedPlugin = {
 				if (Date.now() - seen > LOADER_SEEN_WINDOW_MS) await ctx.kv.set("loaderSeenAt", Date.now());
 				return {
 					snippets: list
-						.filter((s) => s.kind === "code" && s.active)
+						.filter((s) => s.active)
 						.map((s) => ({ id: s.id, where: s.where, show: s.show, prefix: s.prefix, code: s.code })),
 				};
 			},

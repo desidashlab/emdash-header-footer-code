@@ -112,37 +112,6 @@ describe("common tags", () => {
 	});
 });
 
-describe("site verification", () => {
-	it("is served in the page head by the site, not through the loader", async () => {
-		const res = await host.admin.submit("/overview", "add_verify", { service: "google", code: '<meta name="google-site-verification" content="AbC-123_xyz" />' });
-		expect(res.toast?.message).toContain("Google Search Console verification added");
-		expect((await config()).snippets).toEqual([]);
-
-		const metas = await host.transport.invokeHook("page:metadata", { page: { url: "https://example.com/", path: "/", locale: null, kind: "custom", pageType: "website", title: null, description: null, canonical: null, image: null } });
-		expect(metas).toEqual([{ kind: "meta", name: "google-site-verification", content: "AbC-123_xyz", key: expect.stringMatching(/^hfc:/) }]);
-
-		const rows = table(tab(await host.admin.loadPage("/overview"), "Your code"))!.rows;
-		expect(rows[0]).toMatchObject({ name: "Google Search Console verification", where: "Head, served by the site" });
-	});
-
-	it("accepts a bare code for Bing and rejects junk", async () => {
-		await host.admin.submit("/overview", "add_verify", { service: "bing", code: "1234ABCD5678" });
-		const metas = (await host.transport.invokeHook("page:metadata", { page: { url: "https://example.com/", path: "/" } })) as Array<{ name: string; content: string }>;
-		expect(metas.map((m) => [m.name, m.content])).toEqual([["msvalidate.01", "1234ABCD5678"]]);
-
-		const bad = await host.admin.submit("/overview", "add_verify", { service: "google", code: "<script>alert(1)</script>" });
-		expect(bad.toast?.type).toBe("error");
-	});
-
-	it("stops being served when turned off", async () => {
-		await host.admin.submit("/overview", "add_verify", { service: "pinterest", code: "abcd1234" });
-		const rows = table(tab(await host.admin.loadPage("/overview"), "Your code"))!.rows;
-		const id = rows[0]!.remove.value as string;
-		await host.admin.act("/overview", "snippet_menu", { value: `toggle:${id}` });
-		expect(await host.transport.invokeHook("page:metadata", { page: { url: "https://example.com/", path: "/" } })).toBeNull();
-	});
-});
-
 describe("setup", () => {
 	it("shows the loader line and reports when the site has loaded the code", async () => {
 		await addCode({ name: "CSS", code: "<style>a{}</style>" });

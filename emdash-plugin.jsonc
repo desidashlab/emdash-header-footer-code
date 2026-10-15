@@ -5,7 +5,7 @@
 	"publisher": "did:plc:vvm75pgx6ihqfuil7y5awyge",
 
 	"name": "Header & Footer Code",
-	"description": "Add Google Analytics, Tag Manager, pixels, verification tags or any code to your site's head or body. No theme editing.",
+	"description": "Add Google Analytics, Tag Manager, pixels or any code to your site's head or body from the admin. No theme editing.",
 	"keywords": ["header footer", "google analytics", "tag manager", "pixel", "code snippets"],
 
 	"license": "MIT",
@@ -21,7 +21,6 @@
 				{ "file": "assets/screenshot-code.jpg" },
 				{ "file": "assets/screenshot-add.jpg" },
 				{ "file": "assets/screenshot-common.jpg" },
-				{ "file": "assets/screenshot-verify.jpg" },
 				{ "file": "assets/screenshot-setup.jpg" }
 			]
 		}
@@ -33,7 +32,7 @@
 		"changelog": { "file": "docs/changelog.md" }
 	},
 
-	// No access to your content or the outside world. Verification tags are added to the page head through the page metadata hook.
+	// No access to your content or the outside world.
 	"capabilities": [],
 	"allowedHosts": [],
 
